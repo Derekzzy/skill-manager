@@ -12,12 +12,12 @@ class QTableView;
 class QTabWidget;
 class QLineEdit;
 class QTextBrowser;
+class QTextEdit;
 class QListWidget;
 class QPushButton;
 class QLabel;
 class QSplitter;
 class QTimer;
-class QLabel;
 
 class CategoryModel;
 class SkillTableModel;
@@ -114,7 +114,7 @@ private:
 
     // Tab 4: RAG 问答
     QTextBrowser* m_ragView          = nullptr;
-    QLineEdit*    m_ragInput         = nullptr;
+    QTextEdit*    m_ragInput         = nullptr;
     QPushButton*  m_ragSendBtn       = nullptr;
 
     // Tab 5: 元数据/操作

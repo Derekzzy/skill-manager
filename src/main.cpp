@@ -19,6 +19,9 @@
 #include "gui/main_window.h"
 #endif
 
+#include <QDir>
+#include <QFile>
+
 static const char* kDoubaoSkillsRoot = "F:/doubao-skills";
 
 // 在 GUI 首次启动时，自动将 doubaoSkillsRoot 下已有的 git 仓库添加到 DB。
@@ -69,6 +72,16 @@ int main(int argc, char* argv[]) {
     QApplication app(argc, argv);
     app.setApplicationName("SkillManager");
     app.setOrganizationName("SkillManager");
+
+    // 加载 QSS 主题（从 exe 同目录的 resources/style.qss，兼容开发期与部署期）
+    QString qssPath = QCoreApplication::applicationDirPath() + "/resources/style.qss";
+    if (!QFile::exists(qssPath)) {
+        qssPath = QCoreApplication::applicationDirPath() + "/../resources/style.qss";
+    }
+    QFile qssFile(qssPath);
+    if (qssFile.open(QIODevice::ReadOnly)) {
+        app.setStyleSheet(qssFile.readAll());
+    }
 
     if (!Database::instance().init()) {
         qCritical() << "Database init failed";
