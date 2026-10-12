@@ -290,6 +290,10 @@ SkillScanner::Frontmatter SkillScanner::parseFrontmatter(const QString& mdConten
 
     // 找第二个 ---
     int endIdx = rest.indexOf(QRegularExpression("\n---[\\r\\n]"));
+    if (endIdx < 0) {
+        // 也可能结尾直接是 ---（没 \n 后缀）
+        endIdx = rest.indexOf(QRegularExpression("\n---$"));
+    }
     if (endIdx < 0) return fm;
     QString fmText = rest.left(endIdx);
     fm.body = rest.mid(endIdx + 4); // 跳过 \n---
@@ -309,13 +313,11 @@ SkillScanner::Frontmatter SkillScanner::parseFrontmatter(const QString& mdConten
             auto m = re.match(line);
             if (m.hasMatch()) {
                 QString val = m.captured(1).trimmed();
-                // 去引号
                 if (val.startsWith('"') && val.endsWith('"')) val = val.mid(1, val.size() - 2);
                 if (val.startsWith('\'') && val.endsWith('\'')) val = val.mid(1, val.size() - 2);
                 fm.listFields[currentKey].append(val);
                 continue;
             }
-            // 不再是列表项 → 回到 scalar 解析
             inList = false;
         }
 
@@ -326,43 +328,34 @@ SkillScanner::Frontmatter SkillScanner::parseFrontmatter(const QString& mdConten
         QString key = line.left(colon).trimmed();
         QString val = line.mid(colon + 1).trimmed();
 
-        // 多行缩进值（description 可能跨行缩进）—— 简化处理：如果值为空，下一行缩进就拼上
         if (val.isEmpty()) {
             currentKey = key;
             inList = false;
-            // 往后看是否有下一行缩进值
-            // 但因为我们是逐行遍历，这里简单把 key 暂存，下一行处理
-            // 实际上：如果 value 以 "- " 开头就是列表
-            // 下一行的处理在循环里靠 inList / 空值判断实现
             continue;
         }
 
-        // 如果 val 以 "-" 开头（可能是列表，也可能是字符串）
-        // 简化：只有遇到下一行以 "- " 开头才认为是列表
-        // 所以先当作 scalar 存
         QString cleaned = val;
         if (cleaned.startsWith('"') && cleaned.endsWith('"')) cleaned = cleaned.mid(1, cleaned.size() - 2);
         if (cleaned.startsWith('\'') && cleaned.endsWith('\'')) cleaned = cleaned.mid(1, cleaned.size() - 2);
 
-        // 如果当前 key 已经存过 scalar（即刚才 key: 空值然后这一行是续行），拼上
-        if (!currentKey.isEmpty() && fm.scalarFields.contains(currentKey)) {
-            // 多行 description：这行是缩进行
-            QString& existing = fm.scalarFields[currentKey];
-            existing += " " + cleaned;
-            continue;
+        // 如果当前 key 已经存过 scalar，只有当新 key 是缩进续行（冒号位置在前一行 key 的冒号之后）
+        // 才拼上。否则是新 key，覆盖 currentKey。
+        bool isContinuation = !currentKey.isEmpty() && fm.scalarFields.contains(currentKey);
+        if (isContinuation) {
+            // 看当前行是否以空格/Tab 开头（缩进行）
+            QRegularExpression indentRe("^\\s+");
+            if (indentRe.match(rawLine).hasMatch()) {
+                QString& existing = fm.scalarFields[currentKey];
+                existing += " " + cleaned;
+                continue;
+            }
+            // 不是缩进 → 新 key，continue 到下面
         }
 
         fm.scalarFields[key] = cleaned;
         currentKey = key;
-
-        // 判断下一行是否是列表：看 val 是否就是空字符串且后续 - 开头
-        // 这里做一个预扫描：当前 val 非空 → 不是列表
         inList = false;
     }
-
-    // 第二轮：处理列表（上面没处理到的 key: 后接 - 行的情况）
-    // 简化：如果 scalar 里某 key 后面跟着 listFields，或者某 key 的值就是空 + 下一行 - 
-    // 这里我们已经处理了列表项的情况。
 
     return fm;
 }
