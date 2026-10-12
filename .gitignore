@@ -1,0 +1,10 @@
+build/
+*.user
+*.autosave
+*.exe
+*.dll
+*.pdb
+*.db
+skill.db
+.vs/
+CMakeSettings.json
