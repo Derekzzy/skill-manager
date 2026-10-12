@@ -49,6 +49,7 @@ private slots:
     void onCheckUpdates();
     void onAddRepo();
     void onApiSettings();
+    void onBatchTranslate();   // 批量翻译 description
 
     // 详情操作
     void onTranslateCurrent();
@@ -73,6 +74,7 @@ private:
     void buildUi();
     void connectSignals();
     void setupRepoPolling();
+    void trySendOneTranslate();   // 批量翻译内部调度
 
     SkillScanner*   m_scanner;
     Classifier*     m_classifier;
@@ -133,4 +135,11 @@ private:
     // Debounce
     QTimer* m_searchDebounce = nullptr;
     QString m_pendingSearch;
+
+    // 批量翻译状态
+    QPushButton* m_translateBatchBtn = nullptr;
+    QList<int>   m_todoTranslateIds;    // 待翻译的 skill id 队列
+    int          m_activeTranslate = 0;  // 当前 in-flight 数
+    static const int kMaxConcurrentTranslate = 3;
+    bool         m_translateAutoOnBoot = true;  // 启动时自动跑
 };

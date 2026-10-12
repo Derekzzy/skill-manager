@@ -194,7 +194,7 @@ Skill SkillScanner::parseSkillMd(const QString& skillMdPath, Repo* repo) {
     QString desc = fm.scalarFields.value("description");
     if (desc.isEmpty()) desc = fm.scalarFields.value("summary");
     s.description = desc;
-    s.descriptionZh = desc; // 简单处理：description 和 descriptionZh 共用
+    // descriptionZh 初始留空，后续由批量翻译 Worker 填充
 
     // body（frontmatter 之后的正文）
     s.body = fm.body;

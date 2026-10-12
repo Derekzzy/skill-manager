@@ -399,18 +399,21 @@ void MainWindow::buildUi() {
 
     m_scanBtn    = new QPushButton(tr("SCAN"), cmdBar);
     m_refreshBtn = new QPushButton(tr("REFRESH"), cmdBar);
+    m_translateBatchBtn = new QPushButton(tr("TRANSLATE"), cmdBar);
     m_checkBtn   = new QPushButton(tr("UPDATE"), cmdBar);
     m_addRepoBtn = new QPushButton(tr("ADD REPO"), cmdBar);
     m_apiBtn     = new QPushButton(tr("API"), cmdBar);
 
     m_scanBtn->setObjectName("SecondaryBtn");
     m_refreshBtn->setObjectName("SecondaryBtn");
+    m_translateBatchBtn->setObjectName("SecondaryBtn");
     m_checkBtn->setObjectName("SecondaryBtn");
     m_addRepoBtn->setObjectName("SecondaryBtn");
     m_apiBtn->setObjectName("SecondaryBtn");
 
     cmdLayout->addWidget(m_scanBtn);
     cmdLayout->addWidget(m_refreshBtn);
+    cmdLayout->addWidget(m_translateBatchBtn);
     cmdLayout->addWidget(m_checkBtn);
     cmdLayout->addWidget(m_addRepoBtn);
     cmdLayout->addWidget(m_apiBtn);
@@ -442,6 +445,7 @@ void MainWindow::connectSignals() {
     connect(m_checkBtn,   &QPushButton::clicked, this, &MainWindow::onCheckUpdates);
     connect(m_addRepoBtn, &QPushButton::clicked, this, &MainWindow::onAddRepo);
     connect(m_apiBtn,     &QPushButton::clicked, this, &MainWindow::onApiSettings);
+    connect(m_translateBatchBtn, &QPushButton::clicked, this, &MainWindow::onBatchTranslate);
 
     connect(m_ragSendBtn, &QPushButton::clicked, this, &MainWindow::onRagSend);
 
@@ -804,6 +808,100 @@ void MainWindow::onTranslateCurrent() {
         showSkillDetail(updated);
         statusBar()->showMessage(tr("翻译完成"), 2000);
     });
+}
+
+// ============================================================
+// 批量翻译
+// ============================================================
+
+// 检测字符串里是否有 CJK 统一表意文字（汉字）
+static bool hasChineseText(const QString& s) {
+    for (auto it = s.constBegin(); it != s.constEnd(); ++it) {
+        QChar c = *it;
+        uint cp = c.unicode();
+        // CJK 统一表意文字: 0x4E00-0x9FFF, 扩展 A 0x3400-0x4DBF, 兼容表意文字 0xF900-0xFAFF
+        if ((cp >= 0x4E00 && cp <= 0x9FFF) ||
+            (cp >= 0x3400 && cp <= 0x4DBF) ||
+            (cp >= 0xF900 && cp <= 0xFAFF)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void MainWindow::onBatchTranslate() {
+    if (!m_ai || !m_ai->isConfigured()) {
+        QMessageBox::information(this, tr("提示"),
+            tr("请先在底部「API」按钮里配置 DeepSeek API Key"));
+        return;
+    }
+    if (!m_todoTranslateIds.isEmpty() || m_activeTranslate > 0) {
+        QMessageBox::information(this, tr("提示"), tr("翻译正在进行中，请稍候"));
+        return;
+    }
+
+    // 收集：description 非空 + descriptionZh 空 + 原文无中文 + 有实质内容（≥6字）
+    QList<Skill> all = DaoSkill::allSkills(m_db);
+    QList<int> ids;
+    for (const Skill& s : all) {
+        if (s.description.isEmpty()) continue;
+        if (!s.descriptionZh.isEmpty()) continue;   // 已有译文跳过
+        if (hasChineseText(s.description)) continue;  // 本身是中文跳过
+        if (s.description.trimmed().length() < 6) continue;  // 垃圾数据 (>- 等)
+        ids.append(s.id);
+    }
+
+    if (ids.isEmpty()) {
+        QMessageBox::information(this, tr("提示"), tr("没有需要翻译的 skill"));
+        return;
+    }
+
+    m_todoTranslateIds = ids;
+    m_translateBatchBtn->setEnabled(false);
+    statusBar()->showMessage(tr("开始批量翻译，共 %1 条").arg(ids.size()));
+    trySendOneTranslate();
+}
+
+void MainWindow::trySendOneTranslate() {
+    while (m_activeTranslate < kMaxConcurrentTranslate && !m_todoTranslateIds.isEmpty()) {
+        int id = m_todoTranslateIds.takeFirst();
+        Skill s = DaoSkill::skillById(id, m_db);
+        if (s.id == 0 || s.description.isEmpty() || !s.descriptionZh.isEmpty()) continue;
+
+        m_activeTranslate++;
+        m_ai->translate(s.description,
+            [this, id](const QString& zh, const QString& err) {
+                m_activeTranslate--;
+                if (!err.isEmpty()) {
+                    qWarning() << "批量翻译失败 id=" << id << err;
+                } else if (!zh.isEmpty()) {
+                    Skill updated = DaoSkill::skillById(id, m_db);
+                    if (updated.id != 0) {
+                        updated.descriptionZh = zh;
+                        DaoSkill::updateSkill(updated, m_db);
+                    }
+                }
+
+                trySendOneTranslate();
+
+                // 全部完成
+                if (m_todoTranslateIds.isEmpty() && m_activeTranslate == 0) {
+                    m_translateBatchBtn->setEnabled(true);
+                    refreshTable();
+                    refreshCategoryTree();
+                    statusBar()->showMessage(tr("批量翻译完成"), 3000);
+                } else {
+                    int totalDone = 0;
+                    // 扫 DB 里有多少已经翻好的做粗略进度
+                    QSqlQuery q(m_db);
+                    if (q.exec("SELECT COUNT(*) FROM skills WHERE description_zh<>'' AND description<>''")) {
+                        if (q.next()) totalDone = q.value(0).toInt();
+                    }
+                    statusBar()->showMessage(
+                        tr("翻译中... 已完成 %1").arg(totalDone));
+                }
+            });
+    }
 }
 
 void MainWindow::onEnableDisable() {
