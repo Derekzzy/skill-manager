@@ -98,12 +98,15 @@ private:
     QPushButton*  m_addRepoBtn  = nullptr;
     QPushButton*  m_apiBtn      = nullptr;
 
+    // 侧栏计数 & 列表计数
+    QLabel*       m_catTotalLabel  = nullptr;
+    QLabel*       m_countLabel     = nullptr;
+
     // Tab 1: 概览
     QLabel*       m_overviewName     = nullptr;
-    QLabel*       m_overviewCategory = nullptr;
+    QLabel*       m_overviewMeta     = nullptr;   // category · source 合并成一行
     QLabel*       m_overviewSource   = nullptr;
     QTextBrowser* m_overviewDesc     = nullptr;
-    QLabel*       m_overviewStatus   = nullptr;
 
     // Tab 2: SKILL.md
     QTextBrowser* m_skillMdView      = nullptr;

@@ -19,14 +19,15 @@
 #include <QListWidget>
 #include <QPushButton>
 #include <QLabel>
-#include <QToolBar>
 #include <QStatusBar>
 #include <QFormLayout>
 #include <QItemSelectionModel>
 #include <QHeaderView>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
-#include <QGroupBox>
+#include <QFrame>
+#include <QSqlQuery>
+#include <QSqlError>
 #include <QDir>
 #include <QFile>
 #include <QUrl>
@@ -48,28 +49,46 @@
 
 static const char* kDoubaoSkillsRoot = "F:/doubao-skills";
 
-// 简单 markdown → HTML 转码（只处理标题、代码块、列表、换行）
+// 简单 markdown → HTML 转码（目录卡片柜深色版）
 static QString simpleMarkdownToHtml(const QString& md) {
     QString out = md.toHtmlEscaped();
-    // 代码块
-    out.replace(QRegularExpression("```([\\s\\S]*?)```"), "<pre style='background:#282c34;color:#abb2bf;padding:8px;border-radius:4px;white-space:pre-wrap;font-family:Consolas;'>\\1</pre>");
-    // 标题
-    out.replace(QRegularExpression("^### (.+)$", QRegularExpression::MultilineOption), "<h3 style='color:#333;margin:8px 0;'>\\1</h3>");
-    out.replace(QRegularExpression("^## (.+)$",  QRegularExpression::MultilineOption), "<h2 style='color:#222;margin:10px 0;'>\\1</h2>");
-    out.replace(QRegularExpression("^# (.+)$",   QRegularExpression::MultilineOption), "<h1 style='color:#111;margin:12px 0;'>\\1</h1>");
-    // 无序列表
-    out.replace(QRegularExpression("^- (.+)$", QRegularExpression::MultilineOption), "• \\1<br>");
+    // 代码块 —— 纸面暗纹
+    out.replace(QRegularExpression("```([\\s\\S]*?)```"),
+                "<pre style='background:#121417;color:#4DA89C;padding:10px 14px;border-left:2px solid #4DA89C;"
+                "white-space:pre-wrap;font-family:\"Cascadia Code\",Consolas,monospace;font-size:12px;line-height:1.6;'>\\1</pre>");
+    // 标题 —— 打字机等宽
+    out.replace(QRegularExpression("^### (.+)$", QRegularExpression::MultilineOption),
+                "<h3 style='color:#E6E1D6;font-family:\"Cascadia Code\",monospace;font-size:14px;"
+                "letter-spacing:1px;margin:14px 0 6px 0;font-weight:600;'>\\1</h3>");
+    out.replace(QRegularExpression("^## (.+)$", QRegularExpression::MultilineOption),
+                "<h2 style='color:#4DA89C;font-family:\"Cascadia Code\",monospace;font-size:15px;"
+                "letter-spacing:2px;margin:18px 0 8px 0;font-weight:700;'>\\1</h2>");
+    out.replace(QRegularExpression("^# (.+)$", QRegularExpression::MultilineOption),
+                "<h1 style='color:#E6E1D6;font-family:\"Cascadia Code\",monospace;font-size:18px;"
+                "letter-spacing:3px;margin:22px 0 10px 0;font-weight:700;'>\\1</h1>");
+    // 无序列表 —— 铜绿圆点
+    out.replace(QRegularExpression("^- (.+)$", QRegularExpression::MultilineOption),
+                "<div style='padding:2px 0 2px 12px;position:relative;'>"
+                "<span style='color:#4DA89C;position:absolute;left:0;'>·</span>\\1</div>");
     // 有序列表
-    out.replace(QRegularExpression("^\\d+\\. (.+)$", QRegularExpression::MultilineOption), "\\1<br>");
+    out.replace(QRegularExpression("^\\d+\\. (.+)$", QRegularExpression::MultilineOption),
+                "<div style='padding:2px 0 2px 0;'>\\1</div>");
     // 粗体
-    out.replace(QRegularExpression("\\*\\*(.+?)\\*\\*"), "<b>\\1</b>");
+    out.replace(QRegularExpression("\\*\\*(.+?)\\*\\*"), "<b style='color:#4DA89C;font-weight:600;'>\\1</b>");
     // 斜体
-    out.replace(QRegularExpression("\\*(.+?)\\*"), "<i>\\1</i>");
+    out.replace(QRegularExpression("\\*(.+?)\\*"), "<i style='color:#8B929A;font-style:normal;'>\\1</i>");
     // 链接
-    out.replace(QRegularExpression("\\[(.+?)\\]\\((.+?)\\)"), "<a href='\\2' style='color:#1976d2;text-decoration:underline;'>\\1</a>");
+    out.replace(QRegularExpression("\\[(.+?)\\]\\((.+?)\\)"),
+                "<a href='\\2' style='color:#4DA89C;text-decoration:none;border-bottom:1px dashed #2A2E33;'>\\1</a>");
+    // 行内代码
+    out.replace(QRegularExpression("`([^`]+)`"),
+                "<code style='background:#121417;color:#4DA89C;padding:1px 6px;border-radius:2px;"
+                "font-family:\"Cascadia Code\",Consolas,monospace;font-size:12px;'>\\1</code>");
     // 换行
     out.replace("\n", "<br>");
-    return "<div style='font-family:Segoe UI,Microsoft YaHei;line-height:1.6;'>" + out + "</div>";
+    return "<div style='font-family:\"Cascadia Code\",\"JetBrains Mono\",\"Consolas\","
+           "\"Microsoft YaHei UI\",monospace;line-height:1.7;color:#E6E1D6;font-size:13px;'>"
+           + out + "</div>";
 }
 
 MainWindow::MainWindow(SkillScanner* scanner,
@@ -106,55 +125,36 @@ MainWindow::MainWindow(SkillScanner* scanner,
 // ========================================================================
 
 void MainWindow::buildUi() {
-    // ---- 顶部工具栏 ----
-    auto* toolBar = addToolBar(tr(""));
-    toolBar->setMovable(false);
-    toolBar->setIconSize(QSize(16, 16));
+    setWindowTitle(tr("SKILL · Manager"));
+    resize(1280, 820);
 
-    auto* titleLabel = new QLabel(tr("Skill Manager"), this);
-    titleLabel->setObjectName("TitleLabel");
-    toolBar->addWidget(titleLabel);
-
-    m_searchEdit = new QLineEdit(this);
-    m_searchEdit->setObjectName("SearchEdit");
-    m_searchEdit->setPlaceholderText(tr("搜索 skill、书名、章节..."));
-    m_searchEdit->setMinimumWidth(280);
-    toolBar->addWidget(m_searchEdit);
-
-    toolBar->addSeparator();
-
-    m_scanBtn    = new QPushButton(tr("扫描"), this);
-    m_refreshBtn = new QPushButton(tr("刷新"), this);
-    m_checkBtn   = new QPushButton(tr("检查更新"), this);
-    m_addRepoBtn = new QPushButton(tr("添加仓库"), this);
-    m_apiBtn     = new QPushButton(tr("API 设置"), this);
-
-    m_scanBtn->setObjectName("SecondaryBtn");
-    m_refreshBtn->setObjectName("SecondaryBtn");
-    m_checkBtn->setObjectName("SecondaryBtn");
-    m_addRepoBtn->setObjectName("SecondaryBtn");
-    m_apiBtn->setObjectName("SecondaryBtn");
-
-    toolBar->addWidget(m_scanBtn);
-    toolBar->addWidget(m_refreshBtn);
-    toolBar->addWidget(m_checkBtn);
-    toolBar->addWidget(m_addRepoBtn);
-    toolBar->addWidget(m_apiBtn);
-
-    // ---- 三栏主布局 ----
+    // ---- 主容器：上部 Splitter + 底部 CommandBar ----
     auto* central = new QWidget(this);
     setCentralWidget(central);
+    auto* mainV = new QVBoxLayout(central);
+    mainV->setContentsMargins(0, 0, 0, 0);
+    mainV->setSpacing(0);
 
+    // ---- 三栏 Splitter ----
     m_hSplitter = new QSplitter(Qt::Horizontal, central);
+    mainV->addWidget(m_hSplitter, 1);
 
-    // ---- 左栏：分类树 ----
+    // ============================================================
+    // 左栏：Sidebar（分类树）
+    // ============================================================
     auto* leftPanel = new QWidget(m_hSplitter);
+    leftPanel->setObjectName("Sidebar");
     auto* leftLayout = new QVBoxLayout(leftPanel);
-    leftLayout->setContentsMargins(8, 12, 4, 0);
+    leftLayout->setContentsMargins(0, 0, 0, 0);
+    leftLayout->setSpacing(0);
 
-    auto* catLabel = new QLabel(tr("分类"), leftPanel);
-    catLabel->setObjectName("SectionTitle");
+    auto* catLabel = new QLabel(tr("CATEGORIES"), leftPanel);
+    catLabel->setObjectName("SidebarTitle");
     leftLayout->addWidget(catLabel);
+
+    m_catTotalLabel = new QLabel(tr(""), leftPanel);
+    m_catTotalLabel->setObjectName("SidebarCount");
+    leftLayout->addWidget(m_catTotalLabel);
 
     m_catTree = new QTreeView(leftPanel);
     m_catTree->setObjectName("CategoryTree");
@@ -169,10 +169,18 @@ void MainWindow::buildUi() {
 
     m_hSplitter->addWidget(leftPanel);
 
-    // ---- 中栏：Skill 列表 ----
+    // ============================================================
+    // 中栏：ListPanel（Skill 列表）
+    // ============================================================
     auto* midPanel = new QWidget(m_hSplitter);
+    midPanel->setObjectName("ListPanel");
     auto* midLayout = new QVBoxLayout(midPanel);
-    midLayout->setContentsMargins(4, 12, 4, 0);
+    midLayout->setContentsMargins(0, 0, 0, 0);
+    midLayout->setSpacing(0);
+
+    auto* listHeader = new QLabel(tr("SKILLS"), midPanel);
+    listHeader->setObjectName("ListHeader");
+    midLayout->addWidget(listHeader);
 
     m_skillTable = new QTableView(midPanel);
     m_skillTable->setObjectName("SkillTable");
@@ -186,49 +194,60 @@ void MainWindow::buildUi() {
     m_skillTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Interactive);
     m_skillTable->setShowGrid(false);
     m_skillTable->setSortingEnabled(true);
-    m_skillTable->verticalHeader()->setDefaultSectionSize(34);
+    m_skillTable->verticalHeader()->setDefaultSectionSize(36);
     m_skillTable->horizontalHeader()->resizeSection(0, 220);
-    m_skillTable->horizontalHeader()->resizeSection(1, 110);
-    m_skillTable->horizontalHeader()->resizeSection(2, 90);
-    m_skillTable->horizontalHeader()->resizeSection(3, 50);
-    m_skillTable->horizontalHeader()->resizeSection(4, 70);
+    m_skillTable->horizontalHeader()->resizeSection(1, 120);
+    m_skillTable->horizontalHeader()->resizeSection(2, 100);
+    m_skillTable->horizontalHeader()->resizeSection(3, 60);
+    m_skillTable->horizontalHeader()->resizeSection(4, 80);
     m_skillTable->horizontalHeader()->resizeSection(5, 120);
     midLayout->addWidget(m_skillTable, 1);
 
-    auto* countLabel = new QLabel(tr(""), midPanel);
-    countLabel->setProperty("countLabel", true);
-    midLayout->addWidget(countLabel);
+    m_countLabel = new QLabel(tr(""), midPanel);
+    m_countLabel->setObjectName("ListFooter");
+    midLayout->addWidget(m_countLabel);
 
     m_hSplitter->addWidget(midPanel);
 
-    // ---- 右栏：TabWidget 详情 ----
-    m_detailTabs = new QTabWidget(m_hSplitter);
+    // ============================================================
+    // 右栏：DetailCard（纸面卡片 + Tab）
+    // ============================================================
+    auto* detailWrap = new QWidget(m_hSplitter);
+    auto* detailOuter = new QVBoxLayout(detailWrap);
+    detailOuter->setContentsMargins(10, 10, 10, 10);
+
+    auto* detailCard = new QFrame(detailWrap);
+    detailCard->setObjectName("DetailCard");
+    auto* cardLayout = new QVBoxLayout(detailCard);
+    cardLayout->setContentsMargins(0, 0, 0, 0);
+    cardLayout->setSpacing(0);
+
+    m_detailTabs = new QTabWidget(detailCard);
     m_detailTabs->setObjectName("DetailTabs");
 
     // Tab 1: 概览
     {
         auto* tab = new QWidget();
         auto* lay = new QVBoxLayout(tab);
-        lay->setContentsMargins(16, 12, 16, 8);
-        lay->setSpacing(6);
+        lay->setContentsMargins(22, 18, 22, 14);
+        lay->setSpacing(0);
 
         m_overviewName = new QLabel(tab);
         m_overviewName->setObjectName("OverviewTitle");
         lay->addWidget(m_overviewName);
 
-        m_overviewCategory = new QLabel(tab);
-        m_overviewCategory->setObjectName("OverviewCategory");
-        lay->addWidget(m_overviewCategory);
+        m_overviewMeta = new QLabel(tab);
+        m_overviewMeta->setObjectName("OverviewMeta");
+        lay->addWidget(m_overviewMeta);
 
         m_overviewSource = new QLabel(tab);
         m_overviewSource->setObjectName("OverviewSource");
         lay->addWidget(m_overviewSource);
 
-        m_overviewStatus = new QLabel(tab);
-        lay->addWidget(m_overviewStatus);
+        lay->addSpacing(10);
 
-        auto* descLabel = new QLabel(tr("简介"), tab);
-        descLabel->setObjectName("SectionTitle");
+        auto* descLabel = new QLabel(tr("DESCRIPTION"), tab);
+        descLabel->setObjectName("SectionLabel");
         lay->addWidget(descLabel);
 
         m_overviewDesc = new QTextBrowser(tab);
@@ -243,7 +262,7 @@ void MainWindow::buildUi() {
     {
         auto* tab = new QWidget();
         auto* lay = new QVBoxLayout(tab);
-        lay->setContentsMargins(16, 12, 16, 8);
+        lay->setContentsMargins(22, 18, 22, 14);
         m_skillMdView = new QTextBrowser(tab);
         m_skillMdView->setObjectName("SkillMdView");
         m_skillMdView->setOpenExternalLinks(true);
@@ -255,14 +274,14 @@ void MainWindow::buildUi() {
     {
         auto* tab = new QWidget();
         auto* lay = new QVBoxLayout(tab);
-        lay->setContentsMargins(16, 12, 16, 8);
+        lay->setContentsMargins(22, 18, 22, 14);
         m_chapterList = new QListWidget(tab);
         m_chapterList->setObjectName("ChapterList");
         lay->addWidget(m_chapterList, 1);
         m_chapterContent = new QTextBrowser(tab);
         m_chapterContent->setOpenExternalLinks(true);
         m_chapterContent->setObjectName("ChapterView");
-        m_chapterContent->setMaximumHeight(280);
+        m_chapterContent->setMaximumHeight(260);
         lay->addWidget(m_chapterContent);
         m_detailTabs->addTab(tab, tr("章节 / 术语"));
     }
@@ -271,13 +290,15 @@ void MainWindow::buildUi() {
     {
         auto* tab = new QWidget();
         auto* lay = new QVBoxLayout(tab);
-        lay->setContentsMargins(16, 12, 16, 8);
+        lay->setContentsMargins(22, 18, 22, 14);
+        lay->setSpacing(10);
         m_ragView = new QTextBrowser(tab);
         m_ragView->setObjectName("RagView");
         m_ragView->setOpenExternalLinks(true);
         lay->addWidget(m_ragView, 1);
 
         auto* inputRow = new QHBoxLayout();
+        inputRow->setSpacing(10);
         m_ragInput = new QTextEdit(tab);
         m_ragInput->setObjectName("RagInput");
         m_ragInput->setPlaceholderText(tr("问点什么 — 回车键发送"));
@@ -295,21 +316,19 @@ void MainWindow::buildUi() {
     {
         auto* tab = new QWidget();
         auto* lay = new QVBoxLayout(tab);
-        lay->setContentsMargins(16, 12, 16, 8);
+        lay->setContentsMargins(22, 18, 22, 14);
+        lay->setSpacing(10);
 
-        auto* actionBar = new QWidget(tab);
-        actionBar->setObjectName("ActionBar");
-        auto* btnRow = new QHBoxLayout(actionBar);
-        btnRow->setContentsMargins(0, 0, 0, 0);
-        btnRow->setSpacing(8);
+        auto* btnRow = new QHBoxLayout();
+        btnRow->setSpacing(6);
 
-        m_translateBtn = new QPushButton(tr("翻译描述"), actionBar);
-        m_enableBtn    = new QPushButton(tr("启用 / 禁用"), actionBar);
-        m_openDirBtn   = new QPushButton(tr("打开目录"), actionBar);
+        m_translateBtn = new QPushButton(tr("翻译描述"), tab);
+        m_enableBtn    = new QPushButton(tr("启用 / 禁用"), tab);
+        m_openDirBtn   = new QPushButton(tr("打开目录"), tab);
         m_translateBtn->setObjectName("SecondaryBtn");
         m_enableBtn->setObjectName("SecondaryBtn");
         m_openDirBtn->setObjectName("SecondaryBtn");
-        m_deleteBtn = new QPushButton(tr("删除"), actionBar);
+        m_deleteBtn = new QPushButton(tr("删除"), tab);
         m_deleteBtn->setObjectName("DangerBtn");
 
         btnRow->addWidget(m_translateBtn);
@@ -317,10 +336,10 @@ void MainWindow::buildUi() {
         btnRow->addWidget(m_openDirBtn);
         btnRow->addStretch();
         btnRow->addWidget(m_deleteBtn);
-        lay->addWidget(actionBar);
+        lay->addLayout(btnRow);
 
-        auto* metaTitle = new QLabel(tr("位置 & 元数据"), tab);
-        metaTitle->setObjectName("SectionTitle");
+        auto* metaTitle = new QLabel(tr("FILES & METADATA"), tab);
+        metaTitle->setObjectName("SectionLabel");
         lay->addWidget(metaTitle);
 
         m_metaDirectory = new QLabel(tab);
@@ -348,13 +367,53 @@ void MainWindow::buildUi() {
         m_detailTabs->addTab(tab, tr("元数据 / 操作"));
     }
 
-    m_hSplitter->addWidget(m_detailTabs);
+    cardLayout->addWidget(m_detailTabs);
+    detailOuter->addWidget(detailCard);
 
-    // 设置比例：左 20%，中间+右侧 80%
-    m_hSplitter->setStretchFactor(0, 1);
-    m_hSplitter->setStretchFactor(1, 2);
-    m_hSplitter->setStretchFactor(2, 3);
-    m_hSplitter->setSizes(QList<int>() << 220 << 460 << 600);
+    m_hSplitter->addWidget(detailWrap);
+
+    // Splitter 比例
+    m_hSplitter->setStretchFactor(0, 0);
+    m_hSplitter->setStretchFactor(1, 1);
+    m_hSplitter->setStretchFactor(2, 2);
+    m_hSplitter->setSizes(QList<int>() << 200 << 440 << 640);
+
+    // ============================================================
+    // 底部 Command Bar
+    // ============================================================
+    auto* cmdBar = new QWidget(central);
+    cmdBar->setObjectName("CommandBar");
+    auto* cmdLayout = new QHBoxLayout(cmdBar);
+    cmdLayout->setContentsMargins(14, 10, 14, 10);
+    cmdLayout->setSpacing(10);
+    mainV->addWidget(cmdBar);
+
+    auto* prompt = new QLabel(tr("$"), cmdBar);
+    prompt->setObjectName("PromptLabel");
+    cmdLayout->addWidget(prompt);
+
+    m_searchEdit = new QLineEdit(cmdBar);
+    m_searchEdit->setObjectName("CmdSearch");
+    m_searchEdit->setPlaceholderText(tr("search skill / 书名 / 章节 ..."));
+    cmdLayout->addWidget(m_searchEdit, 1);
+
+    m_scanBtn    = new QPushButton(tr("SCAN"), cmdBar);
+    m_refreshBtn = new QPushButton(tr("REFRESH"), cmdBar);
+    m_checkBtn   = new QPushButton(tr("UPDATE"), cmdBar);
+    m_addRepoBtn = new QPushButton(tr("ADD REPO"), cmdBar);
+    m_apiBtn     = new QPushButton(tr("API"), cmdBar);
+
+    m_scanBtn->setObjectName("SecondaryBtn");
+    m_refreshBtn->setObjectName("SecondaryBtn");
+    m_checkBtn->setObjectName("SecondaryBtn");
+    m_addRepoBtn->setObjectName("SecondaryBtn");
+    m_apiBtn->setObjectName("SecondaryBtn");
+
+    cmdLayout->addWidget(m_scanBtn);
+    cmdLayout->addWidget(m_refreshBtn);
+    cmdLayout->addWidget(m_checkBtn);
+    cmdLayout->addWidget(m_addRepoBtn);
+    cmdLayout->addWidget(m_apiBtn);
 }
 
 // ========================================================================
@@ -410,21 +469,19 @@ void MainWindow::connectSignals() {
 void MainWindow::refreshCategoryTree() {
     m_catModel->reload();
     m_catTree->expandAll();
+    // 侧栏计数
+    QSqlQuery q(m_db);
+    int total = 0;
+    if (q.exec("SELECT COUNT(*) FROM skills")) {
+        if (q.next()) total = q.value(0).toInt();
+    }
+    m_catTotalLabel->setText(tr("TOTAL %1").arg(total));
 }
 
 void MainWindow::refreshTable() {
-    // 保留当前分类过滤
     m_tableModel->setFilter(m_catModel->categoryName(m_catTree->currentIndex()), m_searchEdit->text());
     int n = m_tableModel->rowCount();
-
-    auto* label = findChild<QLabel*>("countLabel");
-    if (!label) {
-        // fallback: 遍历找带属性的
-        for (auto* child : centralWidget()->findChildren<QLabel*>()) {
-            if (child->property("countLabel").isValid()) { label = child; break; }
-        }
-    }
-    if (label) label->setText(tr("合计: %1").arg(n));
+    m_countLabel->setText(tr("SKILLS %1").arg(n));
 }
 
 // ========================================================================
@@ -468,10 +525,9 @@ Skill MainWindow::currentSkill() const {
 
 void MainWindow::clearDetail() {
     m_overviewName->clear();
-    m_overviewCategory->clear();
+    m_overviewMeta->clear();
     m_overviewSource->clear();
     m_overviewDesc->clear();
-    m_overviewStatus->clear();
     m_skillMdView->clear();
     m_chapterList->clear();
     m_chapterContent->clear();
@@ -485,38 +541,31 @@ void MainWindow::clearDetail() {
 
 void MainWindow::showSkillDetail(const Skill& s) {
     // Tab 1 概览
-    QString title = s.name;
-    if (s.isNew) title = QString("🆕 ") + title;
-    m_overviewName->setText(title);
+    m_overviewName->setText(s.name);
 
-    QString catLine = s.category.isEmpty() ? tr("未分类") : s.category;
-    if (!s.tags.isEmpty()) catLine += tr("  |  标签: ") + s.tags;
-    m_overviewCategory->setText(catLine);
-
-    QString sourceText = s.source.isEmpty() ? "local" : s.source;
+    QString catTag = s.category.isEmpty() ? tr("未分类") : s.category;
+    QString srcTag = s.source.isEmpty() ? "local" : s.source;
     if (s.repoId > 0) {
         Repo repo = DaoSkill::repoById(s.repoId, m_db);
-        if (repo.id != 0) sourceText += QString("  (repo: %1)").arg(repo.name);
+        if (repo.id != 0) srcTag += QString(" · %1").arg(repo.name);
     }
-    m_overviewSource->setText(tr("来源: %1  |  目录: %2").arg(sourceText, s.directory));
+    if (!s.tags.isEmpty()) catTag += QString(" · %1").arg(s.tags.split(',')[0]);
+    m_overviewMeta->setText(QString("◆ %1   %2").arg(catTag, srcTag));
 
-    m_overviewStatus->setText(s.enabled
-        ? QString("<span style='color:#2e7d32;'>● %1</span>").arg(tr("已启用"))
-        : QString("<span style='color:#c62828;'>● %1</span>").arg(tr("已禁用")));
+    QString srcText = s.source.isEmpty() ? "local" : s.source;
+    if (s.repoId > 0) {
+        Repo repo = DaoSkill::repoById(s.repoId, m_db);
+        if (repo.id != 0) srcText += QString("  (repo: %1)").arg(repo.name);
+    }
+    m_overviewSource->setText(tr("DIR  %1").arg(s.directory));
 
     QString descHtml;
     if (!s.descriptionZh.isEmpty()) {
         descHtml = simpleMarkdownToHtml(s.descriptionZh);
-        if (!s.description.isEmpty()) {
-            descHtml += QString("<hr><p style='color:#888;font-size:12px;'>%1</p>")
-                            .arg(s.description.toHtmlEscaped());
-        }
     } else if (!s.description.isEmpty()) {
         descHtml = simpleMarkdownToHtml(s.description);
-        descHtml += QString("<p style='color:#999;font-size:12px;margin-top:8px;'>%1</p>")
-                        .arg(tr("（点「翻译描述」可翻译成中文）"));
     } else {
-        descHtml = QString("<p style='color:#aaa;'>%1</p>").arg(tr("（无描述）"));
+        descHtml = QString("<p style='color:#6B7278;font-style:normal;'>— no description —</p>");
     }
     m_overviewDesc->setHtml(descHtml);
 
