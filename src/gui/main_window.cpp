@@ -136,33 +136,39 @@ void MainWindow::buildUi() {
     mainV->setSpacing(0);
 
     // ============================================================
-    // Title Bar — 藏书票标题 + 烫金细线 + 搜索框
+    // Title Bar — bash prompt 风格
     // ============================================================
     auto* titleBar = new QWidget(central);
     titleBar->setObjectName("TitleBar");
-    titleBar->setFixedHeight(84);
+    titleBar->setFixedHeight(48);
     auto* tLayout = new QHBoxLayout(titleBar);
-    tLayout->setContentsMargins(24, 14, 24, 10);
-    tLayout->setSpacing(18);
+    tLayout->setContentsMargins(18, 8, 18, 6);
+    tLayout->setSpacing(0);
 
-    auto* titleL = new QLabel(tr("Skill Manager"), titleBar);
-    titleL->setObjectName("TitleMain");
-    tLayout->addWidget(titleL);
+    auto* hostLbl = new QLabel(tr("user@skill-manager"), titleBar);
+    hostLbl->setObjectName("TitleHost");
+    tLayout->addWidget(hostLbl);
 
-    auto* titleSub = new QLabel(tr("私人藏书目录 · 5610 种"), titleBar);
-    titleSub->setObjectName("TitleSub");
-    tLayout->addWidget(titleSub);
-    tLayout->addStretch();
+    auto* pathLbl = new QLabel(tr(":~$"), titleBar);
+    pathLbl->setObjectName("TitlePath");
+    tLayout->addWidget(pathLbl);
+
+    tLayout->addSpacing(12);
 
     m_searchEdit = new QLineEdit(titleBar);
     m_searchEdit->setObjectName("TitleSearch");
-    m_searchEdit->setPlaceholderText(tr("搜索书名 / 分类 / 关键字..."));
-    m_searchEdit->setFixedWidth(320);
+    m_searchEdit->setPlaceholderText(tr("输入 skill 名 / 关键字 然后回车"));
+    m_searchEdit->setFixedWidth(420);
     tLayout->addWidget(m_searchEdit);
+
+    tLayout->addStretch();
+
+    auto* tagLbl = new QLabel(tr("ready · 5610 skills · deepseek"), titleBar);
+    tagLbl->setObjectName("TitleTags");
+    tLayout->addWidget(tagLbl);
 
     mainV->addWidget(titleBar);
 
-    // 烫金细线分隔
     auto* goldRule = new QFrame(central);
     goldRule->setObjectName("GoldRule");
     goldRule->setFrameShape(QFrame::HLine);

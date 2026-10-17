@@ -1,183 +1,192 @@
 /* ============================================================
- * Skill Manager — 出版装订 / 藏书票主题
- * 题材锚定：1300 本书籍 skill — 私人藏书目录
- * 象牙纸 + 烫金细线 + 朱印红 + 宋体贯穿正文
+ * Skill Manager — 方案 A · Hacker Console 深色终端
+ * 题材锚定：CLI 工具链 + git — 5600 skill 的 shell 控制台
+ * 终端黑 + 终端绿 + 琥珀双 accent，Cascadia Code 贯穿
+ * 防 AI 默认：不是酸绿 #00FF00，是 tmux 终端绿 #7AFEC6
+ * 双 accent 语义分工（交互=绿，git状态=琥珀）
  * ============================================================ */
 
-/* ---------- 全局 token ---------- */
 QWidget {
-    font-family: "Noto Serif SC", "Source Han Serif SC",
-                 "SimSun", "STSong", "Georgia", serif;
+    font-family: "Cascadia Code", "JetBrains Mono", "Consolas",
+                 "Microsoft YaHei UI", "PingFang SC", monospace;
     font-size: 13px;
-    color: #1F2327;
-    background-color: #F3ECE0;
-    selection-background-color: #9B2C2C;
-    selection-color: #F3ECE0;
+    color: #B8C4BD;
+    background-color: #0A0E0F;
+    selection-background-color: #7AFEC6;
+    selection-color: #0A0E0F;
 }
 
-QMainWindow {
-    background-color: #F3ECE0;
-}
+QMainWindow { background-color: #0A0E0F; }
 
-/* ---------- 顶部 TitleBar 藏书票 ---------- */
+/* ---------- TitleBar · Bash Prompt ---------- */
 QWidget#TitleBar {
-    background-color: #F3ECE0;
+    background-color: #0A0E0F;
 }
 
 QLabel#TitleMain {
-    font-family: "Noto Serif SC", "Source Han Serif SC",
-                 "SimSun", "STSong", serif;
-    font-size: 26px;
-    font-weight: 700;
-    color: #1F2327;
-    letter-spacing: 2px;
+    font-family: "Cascadia Code", "JetBrains Mono", monospace;
+    font-size: 14px;
+    font-weight: 400;
+    color: #B8C4BD;
+}
+
+QLabel#TitleHost {
+    font-family: "Cascadia Code", "JetBrains Mono", monospace;
+    font-size: 13px;
+    font-weight: 600;
+    color: #7AFEC6;
+}
+
+QLabel#TitlePath {
+    font-family: "Cascadia Code", "JetBrains Mono", monospace;
+    font-size: 13px;
+    color: #4A5650;
+}
+
+QLabel#TitleTags {
+    font-family: "Cascadia Code", "JetBrains Mono", monospace;
+    font-size: 11px;
+    color: #4A5650;
 }
 
 QLabel#TitleSub {
-    font-family: "Noto Sans SC", "Microsoft YaHei UI", sans-serif;
+    font-family: "Cascadia Code", "JetBrains Mono", monospace;
     font-size: 12px;
-    color: #8B7F6C;
-    padding-bottom: 4px;
+    color: #4A5650;
 }
 
 QLineEdit#TitleSearch {
     background-color: transparent;
     border: none;
-    border-bottom: 1px solid #C8BFAE;
+    border-bottom: 1px solid #1C2421;
     padding: 6px 4px;
-    color: #1F2327;
-    font-family: "Noto Serif SC", "Source Han Serif SC", serif;
+    color: #B8C4BD;
+    font-family: "Cascadia Code", "JetBrains Mono", monospace;
     font-size: 13px;
-    selection-background-color: #9B2C2C;
-    selection-color: #F3ECE0;
+    selection-background-color: #7AFEC6;
+    selection-color: #0A0E0F;
 }
 
 QLineEdit#TitleSearch:focus {
-    border-bottom-color: #9B2C2C;
+    border-bottom-color: #7AFEC6;
 }
 
 QLineEdit#TitleSearch::placeholder {
-    color: #B8ACA0;
-    font-family: "Noto Sans SC", "Microsoft YaHei UI", sans-serif;
-    font-size: 12px;
+    color: #3A4440;
 }
 
 QFrame#GoldRule {
-    background-color: #C9A96E;
+    background-color: #1C2421;
     border: none;
 }
 
-/* ---------- 侧栏 书脊 ---------- */
+/* ---------- 侧栏 ---------- */
 QWidget#Sidebar {
-    background-color: #F3ECE0;
-    border-right: 1px solid #C8BFAE;
+    background-color: #0A0E0F;
+    border-right: 1px solid #1C2421;
 }
 
 QLabel#SidebarTitle {
-    font-family: "Noto Sans SC", "Microsoft YaHei UI", sans-serif;
-    font-size: 12px;
-    font-weight: 500;
-    color: #C9A96E;
+    font-size: 11px;
+    color: #4A5650;
+    letter-spacing: 1px;
     padding: 18px 20px 4px 20px;
 }
 
 QLabel#SidebarCount {
-    font-family: "Noto Sans SC", "Microsoft YaHei UI", sans-serif;
     font-size: 11px;
-    color: #8B7F6C;
+    color: #7AFEC6;
     padding: 0 20px 14px 20px;
 }
 
 QTreeView#CategoryTree {
-    background-color: #F3ECE0;
+    background-color: #0A0E0F;
     border: none;
     outline: none;
     padding: 0;
 }
 
 QTreeView#CategoryTree::item {
-    padding: 8px 20px 8px 22px;
-    color: #4A4238;
-    border-left: 1px solid #D8D2C2;
+    padding: 7px 20px;
+    color: #5A6B63;
+    border-left: 2px solid transparent;
 }
 
 QTreeView#CategoryTree::item:hover {
-    background-color: #EDE5D6;
-    color: #1F2327;
+    background-color: #0F1516;
+    color: #B8C4BD;
 }
 
 QTreeView#CategoryTree::item:selected {
     background-color: transparent;
-    color: #9B2C2C;
-    border-left: 3px solid #9B2C2C;
-    font-weight: 600;
+    color: #7AFEC6;
+    border-left: 3px solid #7AFEC6;
 }
 
 QTreeView#CategoryTree::branch { background: transparent; }
 QTreeView#CategoryTree QHeaderView { background: transparent; border: none; height: 0; }
 
-/* ---------- 中栏 目录卡片 ---------- */
+/* ---------- 中栏 ---------- */
 QWidget#ListPanel {
-    background-color: #F3ECE0;
-    border-right: 1px solid #C8BFAE;
+    background-color: #0A0E0F;
+    border-right: 1px solid #1C2421;
 }
 
 QLabel#ListHeader {
-    font-family: "Noto Sans SC", "Microsoft YaHei UI", sans-serif;
-    font-size: 12px;
-    font-weight: 500;
-    color: #C9A96E;
+    font-size: 11px;
+    color: #4A5650;
+    letter-spacing: 1px;
     padding: 18px 18px 4px 20px;
 }
 
 QTableView#SkillTable {
-    background-color: #F3ECE0;
+    background-color: #0A0E0F;
     border: none;
     outline: none;
     gridline-color: transparent;
     selection-background-color: transparent;
-    selection-color: #9B2C2C;
+    selection-color: #7AFEC6;
 }
 
 QTableView#SkillTable::item {
-    padding: 8px 18px 8px 20px;
-    color: #4A4238;
-    border-bottom: 1px solid #E8E1D3;
+    padding: 6px 18px;
+    color: #5A6B63;
+    border-bottom: 1px solid #0F1516;
 }
 
 QTableView#SkillTable::item:hover {
-    background-color: #EDE5D6;
+    background-color: #0F1516;
+    color: #B8C4BD;
 }
 
 QTableView#SkillTable::item:selected {
-    background-color: #EDE5D6;
-    color: #1F2327;
-    border-left: 3px solid #9B2C2C;
+    background-color: #0F1516;
+    color: #7AFEC6;
+    border-left: 2px solid #7AFEC6;
 }
 
 QTableView#SkillTable QHeaderView::section {
-    background-color: #F3ECE0;
-    color: #8B7F6C;
+    background-color: #0A0E0F;
+    color: #4A5650;
     border: none;
-    border-bottom: 1px solid #C8BFAE;
+    border-bottom: 1px solid #1C2421;
     padding: 10px 18px;
-    font-family: "Noto Sans SC", "Microsoft YaHei UI", sans-serif;
     font-size: 11px;
-    font-weight: 500;
+    letter-spacing: 0;
 }
 
 QLabel#ListFooter {
-    font-family: "Noto Sans SC", "Microsoft YaHei UI", sans-serif;
     font-size: 11px;
-    color: #C9A96E;
+    color: #7AFEC6;
     padding: 10px 20px;
-    border-top: 1px solid #C8BFAE;
+    border-top: 1px solid #1C2421;
 }
 
-/* ---------- 右侧 内页 ---------- */
+/* ---------- 右侧 ---------- */
 QFrame#DetailCard {
-    background-color: #EFE7D8;
-    border: 1px solid #C8BFAE;
+    background-color: #0F1516;
+    border: 1px solid #1C2421;
+    border-radius: 0;
 }
 
 QTabWidget#DetailTabs {
@@ -187,60 +196,53 @@ QTabWidget#DetailTabs {
 
 QTabWidget#DetailTabs::pane {
     border: none;
-    border-top: 1px solid #C8BFAE;
+    border-top: 1px solid #1C2421;
 }
 
 QTabWidget#DetailTabs QTabBar::tab {
     background: transparent;
-    color: #8B7F6C;
+    color: #4A5650;
     border: none;
     padding: 12px 22px;
-    margin-right: 0;
-    font-family: "Noto Sans SC", "Microsoft YaHei UI", sans-serif;
     font-size: 12px;
     border-bottom: 1px solid transparent;
 }
 
 QTabWidget#DetailTabs QTabBar::tab:hover {
-    color: #4A4238;
+    color: #5A6B63;
 }
 
 QTabWidget#DetailTabs QTabBar::tab:selected {
-    color: #9B2C2C;
-    border-bottom-color: #9B2C2C;
+    color: #7AFEC6;
+    border-bottom-color: #7AFEC6;
     font-weight: 600;
 }
 
-/* ---------- 详情内容 ---------- */
 QLabel#OverviewTitle {
-    font-family: "Noto Serif SC", "Source Han Serif SC", serif;
-    font-size: 22px;
+    font-size: 20px;
     font-weight: 700;
-    color: #1F2327;
+    color: #B8C4BD;
     padding: 0 0 4px 0;
 }
 
 QLabel#OverviewMeta {
-    font-family: "Noto Sans SC", "Microsoft YaHei UI", sans-serif;
     font-size: 11px;
-    color: #C9A96E;
+    color: #FFA627;  /* 琥珀 — 元数据/git状态 */
     padding: 0 0 2px 0;
 }
 
 QLabel#OverviewSource {
-    font-family: "Noto Sans SC", "Microsoft YaHei UI", sans-serif;
     font-size: 11px;
-    color: #8B7F6C;
+    color: #4A5650;
     padding: 0 0 12px 0;
 }
 
 QLabel#SectionLabel {
-    font-family: "Noto Sans SC", "Microsoft YaHei UI", sans-serif;
     font-size: 11px;
     font-weight: 500;
-    color: #9B2C2C;
+    color: #7AFEC6;
     padding: 14px 0 6px 0;
-    border-bottom: 1px solid #C8BFAE;
+    border-bottom: 1px solid #1C2421;
 }
 
 QTextBrowser#OverviewDesc,
@@ -250,12 +252,12 @@ QTextBrowser#RagView,
 QTextBrowser#RagAnswerView {
     background-color: transparent;
     border: none;
-    color: #1F2327;
+    color: #B8C4BD;
     padding: 0;
-    font-family: "Noto Serif SC", "Source Han Serif SC",
-                 "SimSun", "STSong", "Georgia", serif;
-    font-size: 14px;
-    line-height: 1.9;
+    font-family: "Cascadia Code", "JetBrains Mono", "Consolas",
+                 "Microsoft YaHei UI", monospace;
+    font-size: 13px;
+    line-height: 1.7;
 }
 
 QListWidget#ChapterList {
@@ -265,210 +267,158 @@ QListWidget#ChapterList {
 }
 
 QListWidget#ChapterList::item {
-    padding: 6px 12px;
-    color: #4A4238;
+    padding: 5px 10px;
+    color: #5A6B63;
     border-left: 2px solid transparent;
 }
 
 QListWidget#ChapterList::item:hover {
-    background-color: #EDE5D6;
+    background-color: #0F1516;
+    color: #B8C4BD;
 }
 
 QListWidget#ChapterList::item:selected {
-    background-color: #EDE5D6;
-    color: #9B2C2C;
-    border-left: 2px solid #9B2C2C;
+    color: #7AFEC6;
+    border-left: 2px solid #7AFEC6;
 }
 
-/* ---------- 底部按钮栏 ---------- */
+/* ---------- 底部 ---------- */
 QWidget#CommandBar {
-    background-color: #F3ECE0;
-    border-top: 1px solid #C8BFAE;
+    background-color: #0A0E0F;
+    border-top: 1px solid #1C2421;
 }
 
 QPushButton {
-    background-color: #9B2C2C;
-    color: #F3ECE0;
+    background-color: #7AFEC6;
+    color: #0A0E0F;
     border: none;
-    padding: 7px 16px;
-    font-family: "Noto Sans SC", "Microsoft YaHei UI", sans-serif;
+    padding: 6px 16px;
+    font-family: "Cascadia Code", "JetBrains Mono", monospace;
     font-size: 12px;
-    font-weight: 500;
+    font-weight: 600;
+    border-radius: 0;
 }
 
-QPushButton:hover {
-    background-color: #8A2626;
-}
-
-QPushButton:pressed {
-    background-color: #731F1F;
-}
-
+QPushButton:hover { background-color: #6DE5B0; }
+QPushButton:pressed { background-color: #5BC896; }
 QPushButton:disabled {
-    background-color: #D8D2C2;
-    color: #B8ACA0;
+    background-color: #1C2421;
+    color: #3A4440;
 }
 
-/* 次级按钮：朱印文字 + 细边框 */
 QPushButton#SecondaryBtn {
     background-color: transparent;
-    color: #4A4238;
-    border: 1px solid #C8BFAE;
+    color: #5A6B63;
+    border: none;
+    border-left: 2px solid #1C2421;
     padding: 6px 14px;
-    font-family: "Noto Sans SC", "Microsoft YaHei UI", sans-serif;
     font-size: 12px;
     border-radius: 0;
 }
 
 QPushButton#SecondaryBtn:hover {
-    background-color: #EDE5D6;
-    color: #9B2C2C;
-    border-color: #9B2C2C;
+    background-color: #0F1516;
+    color: #7AFEC6;
+    border-left-color: #7AFEC6;
 }
 
-QPushButton#SecondaryBtn:pressed {
-    background-color: #D8D2C2;
-}
-
-/* 危险按钮 */
 QPushButton#DangerBtn {
     background-color: transparent;
-    color: #9B2C2C;
-    border: 1px solid #C8BFAE;
+    color: #FFA627;
+    border: 1px solid #1C2421;
 }
 
 QPushButton#DangerBtn:hover {
-    background-color: #9B2C2C;
-    color: #F3ECE0;
+    background-color: #2A1E0F;
+    border-color: #FFA627;
 }
 
-/* ---------- RAG 输入 ---------- */
 QTextEdit#RagInput {
-    background-color: #EFE7D8;
-    border: 1px solid #C8BFAE;
-    color: #1F2327;
+    background-color: #0F1516;
+    border: 1px solid #1C2421;
+    color: #B8C4BD;
     padding: 10px 14px;
-    font-family: "Noto Serif SC", "Source Han Serif SC", serif;
-    selection-background-color: #9B2C2C;
-    selection-color: #F3ECE0;
+    font-family: "Cascadia Code", "JetBrains Mono", monospace;
+    selection-background-color: #7AFEC6;
+    selection-color: #0A0E0F;
     min-height: 60px;
 }
 
-QTextEdit#RagInput:focus {
-    border-color: #9B2C2C;
-}
+QTextEdit#RagInput:focus { border-color: #7AFEC6; }
 
-/* ---------- 状态条 ---------- */
 QStatusBar {
-    background-color: #F3ECE0;
-    color: #8B7F6C;
-    border-top: 1px solid #E8E1D3;
+    background-color: #0A0E0F;
+    color: #4A5650;
+    border-top: 1px solid #0F1516;
     font-size: 11px;
-    font-family: "Noto Sans SC", "Microsoft YaHei UI", sans-serif;
+    font-family: "Cascadia Code", "JetBrains Mono", monospace;
 }
 
-/* ---------- 分隔器 ---------- */
-QSplitter::handle {
-    background-color: #C8BFAE;
-}
-
-QSplitter::handle:hover {
-    background-color: #9B2C2C;
-}
-
+QSplitter::handle { background-color: #1C2421; }
+QSplitter::handle:hover { background-color: #7AFEC6; }
 QSplitter::handle:horizontal { width: 1px; }
 QSplitter::handle:vertical   { height: 1px; }
 
-/* ---------- 滚动条 ---------- */
 QScrollBar:vertical {
     background-color: transparent;
     width: 8px;
     margin: 2px 0;
 }
-
 QScrollBar::handle:vertical {
-    background-color: #C8BFAE;
+    background-color: #1C2421;
     min-height: 30px;
+    border-radius: 0;
 }
-
-QScrollBar::handle:vertical:hover {
-    background-color: #B8ACA0;
-}
-
-QScrollBar::add-line:vertical,
-QScrollBar::sub-line:vertical {
-    height: 0;
-}
+QScrollBar::handle:vertical:hover { background-color: #2A3632; }
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }
 
 QScrollBar:horizontal {
     background-color: transparent;
     height: 8px;
     margin: 0 2px;
 }
-
 QScrollBar::handle:horizontal {
-    background-color: #C8BFAE;
+    background-color: #1C2421;
     min-width: 30px;
+    border-radius: 0;
 }
+QScrollBar::handle:horizontal:hover { background-color: #2A3632; }
 
-QScrollBar::handle:horizontal:hover {
-    background-color: #B8ACA0;
-}
+QDialog, QMessageBox { background-color: #0A0E0F; }
+QDialog QLabel, QMessageBox QLabel { color: #B8C4BD; }
+QDialogButtonBox QPushButton { min-width: 80px; }
 
-/* ---------- 弹窗 ---------- */
-QDialog, QMessageBox {
-    background-color: #F3ECE0;
-}
-
-QDialog QLabel, QMessageBox QLabel {
-    color: #1F2327;
-}
-
-QDialogButtonBox QPushButton {
-    min-width: 80px;
-}
-
-/* ---------- 进度条 ---------- */
 QProgressBar {
-    background-color: #EDE5D6;
-    border: 1px solid #C8BFAE;
+    background-color: #0F1516;
+    border: 1px solid #1C2421;
     height: 6px;
     text-align: center;
     color: transparent;
+    border-radius: 0;
 }
+QProgressBar::chunk { background-color: #7AFEC6; }
 
-QProgressBar::chunk {
-    background-color: #9B2C2C;
-}
-
-/* ---------- RAG 对话气泡 ---------- */
 QLabel#UserBubble {
-    background-color: #EDE5D6;
-    color: #1F2327;
+    background-color: #1C2421;
+    color: #B8C4BD;
     padding: 10px 14px;
-    border-left: 2px solid #C9A96E;
-    font-family: "Noto Serif SC", serif;
+    border-left: 2px solid #4A5650;
 }
 
 QLabel#AiBubble {
     background-color: transparent;
-    color: #9B2C2C;
+    color: #7AFEC6;
     padding: 4px 0 4px 14px;
-    border-left: 2px solid #9B2C2C;
-    font-family: "Noto Serif SC", serif;
+    border-left: 2px solid #7AFEC6;
 }
 
-/* ---------- 输入框通用 ---------- */
 QLineEdit, QComboBox {
-    background-color: #EFE7D8;
-    border: 1px solid #C8BFAE;
+    background-color: #0F1516;
+    border: 1px solid #1C2421;
     padding: 6px 10px;
-    color: #1F2327;
-    font-family: "Noto Serif SC", "Source Han Serif SC", serif;
-    selection-background-color: #9B2C2C;
-    selection-color: #F3ECE0;
+    color: #B8C4BD;
+    font-family: "Cascadia Code", "JetBrains Mono", monospace;
+    selection-background-color: #7AFEC6;
+    selection-color: #0A0E0F;
 }
-
-QLineEdit:focus, QComboBox:focus {
-    border-color: #9B2C2C;
-}
+QLineEdit:focus, QComboBox:focus { border-color: #7AFEC6; }
