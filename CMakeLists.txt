@@ -35,3 +35,10 @@ target_link_libraries(SkillManager PRIVATE
     Qt6::Xml
     Qt6::Charts
 )
+
+# 复制 resources/ 到构建输出（包含 themes/*.qss）
+add_custom_command(TARGET SkillManager POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_SOURCE_DIR}/resources"
+        "$<TARGET_FILE_DIR:SkillManager>/resources"
+)

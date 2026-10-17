@@ -1,10 +1,12 @@
 #include "dialogs.h"
+#include "main_window.h"
 #include <QFormLayout>
 #include <QLineEdit>
 #include <QDialogButtonBox>
 #include <QVBoxLayout>
 #include <QSettings>
 #include <QLabel>
+#include <QComboBox>
 
 // ============ ApiSettingsDialog ============
 
@@ -12,22 +14,33 @@ ApiSettingsDialog::ApiSettingsDialog(QWidget* parent)
     : QDialog(parent)
 {
     setWindowTitle(QObject::tr("API 设置"));
-    setMinimumWidth(420);
+    setMinimumWidth(460);
 
     QSettings s("SkillManager", "SkillManager");
     QString savedEndpoint = s.value("deepseek/endpoint", "https://api.deepseek.com/chat/completions").toString();
     QString savedApiKey   = s.value("deepseek/apiKey", QString()).toString();
     QString savedModel    = s.value("deepseek/model", "deepseek-chat").toString();
+    QString savedTheme    = s.value("ui/theme", "obsidian").toString();
 
     m_endpointEdit = new QLineEdit(savedEndpoint, this);
     m_apiKeyEdit   = new QLineEdit(savedApiKey, this);
     m_apiKeyEdit->setEchoMode(QLineEdit::Password);
     m_modelEdit    = new QLineEdit(savedModel, this);
 
+    // 主题下拉
+    m_themeCombo = new QComboBox(this);
+    QStringList ids = MainWindow::availableThemes();
+    for (const QString& id : ids) {
+        m_themeCombo->addItem(MainWindow::themeDisplayName(id), id);
+    }
+    int idx = m_themeCombo->findData(savedTheme);
+    if (idx >= 0) m_themeCombo->setCurrentIndex(idx);
+
     auto* form = new QFormLayout();
     form->addRow(QObject::tr("Endpoint:"), m_endpointEdit);
     form->addRow(QObject::tr("API Key:"),  m_apiKeyEdit);
     form->addRow(QObject::tr("Model:"),    m_modelEdit);
+    form->addRow(QObject::tr("界面主题:"), m_themeCombo);
 
     auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
     connect(buttons, &QDialogButtonBox::accepted, this, [this]() {
@@ -35,6 +48,8 @@ ApiSettingsDialog::ApiSettingsDialog(QWidget* parent)
         s.setValue("deepseek/endpoint", m_endpointEdit->text().trimmed());
         s.setValue("deepseek/apiKey",   m_apiKeyEdit->text());
         s.setValue("deepseek/model",    m_modelEdit->text().trimmed());
+        QString themeId = m_themeCombo->currentData().toString();
+        s.setValue("ui/theme", themeId);
         accept();
     });
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
@@ -47,6 +62,7 @@ ApiSettingsDialog::ApiSettingsDialog(QWidget* parent)
 QString ApiSettingsDialog::endpoint() const { return m_endpointEdit->text().trimmed(); }
 QString ApiSettingsDialog::apiKey()   const { return m_apiKeyEdit->text(); }
 QString ApiSettingsDialog::model()    const { return m_modelEdit->text().trimmed(); }
+QString ApiSettingsDialog::themeId()  const { return m_themeCombo->currentData().toString(); }
 
 // ============ RepoAddDialog ============
 

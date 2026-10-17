@@ -46,6 +46,10 @@
 #include <QScrollArea>
 #include <QRegularExpression>
 #include <QSize>
+#include <QCoreApplication>
+#include <QSettings>
+#include <QMap>
+#include <QApplication>
 
 static const char* kDoubaoSkillsRoot = "F:/doubao-skills";
 
@@ -817,7 +821,9 @@ void MainWindow::onApiSettings() {
             m_ai->setApiKey(dlg.apiKey());
             m_ai->setModel(dlg.model());
         }
-        statusBar()->showMessage(tr("API 设置已更新"), 2000);
+        // 立即切换主题（热重载 QSS）
+        applyTheme(dlg.themeId());
+        statusBar()->showMessage(tr("设置已更新，主题已切换"), 2000);
     }
 }
 
@@ -1030,4 +1036,41 @@ void MainWindow::appendRagAnswer(const QString& question, const QString& answer)
         "<b>A:</b> %2</div>")
         .arg(question.toHtmlEscaped(), answer.toHtmlEscaped());
     m_ragView->append(bubble);
+}
+
+// ============================================================
+// 主题切换
+// ============================================================
+
+QStringList MainWindow::availableThemes() {
+    return { "obsidian", "linear", "paper", "forest" };
+}
+
+QString MainWindow::themeDisplayName(const QString& id) {
+    static const QMap<QString, QString> map = {
+        { "obsidian", "Obsidian · 深石板" },
+        { "linear",   "Linear · 极深蓝"  },
+        { "paper",    "Notion · 浅石墨"  },
+        { "forest",   "森林 · 墨绿"      }
+    };
+    return map.value(id, id);
+}
+
+void MainWindow::applyTheme(const QString& themeName) {
+    QString base = QCoreApplication::applicationDirPath() + "/resources/themes/";
+    QString alt  = QCoreApplication::applicationDirPath() + "/../resources/themes/";
+    QString qssPath;
+    if (QFile::exists(base + themeName + ".qss"))
+        qssPath = base + themeName + ".qss";
+    else
+        qssPath = alt + themeName + ".qss";
+
+    QFile f(qssPath);
+    if (f.open(QIODevice::ReadOnly)) {
+        // 用 QApplication 覆盖全局样式，立即生效
+        qobject_cast<QApplication*>(qApp)->setStyleSheet(f.readAll());
+    }
+
+    QSettings s("SkillManager", "SkillManager");
+    s.setValue("ui/theme", themeName);
 }

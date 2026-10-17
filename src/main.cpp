@@ -73,10 +73,18 @@ int main(int argc, char* argv[]) {
     app.setApplicationName("SkillManager");
     app.setOrganizationName("SkillManager");
 
-    // 加载 QSS 主题（从 exe 同目录的 resources/style.qss，兼容开发期与部署期）
-    QString qssPath = QCoreApplication::applicationDirPath() + "/resources/style.qss";
+    // 根据 QSettings 加载主题（默认 obsidian）
+    QSettings s("SkillManager", "SkillManager");
+    QString themeName = s.value("ui/theme", "obsidian").toString();
+    QString qssPath = QCoreApplication::applicationDirPath()
+                    + "/resources/themes/" + themeName + ".qss";
     if (!QFile::exists(qssPath)) {
-        qssPath = QCoreApplication::applicationDirPath() + "/../resources/style.qss";
+        // fallback: 兼容旧路径 + 开发期 ../resources/
+        QString alt = QCoreApplication::applicationDirPath()
+                    + "/../resources/themes/" + themeName + ".qss";
+        if (QFile::exists(alt)) qssPath = alt;
+        else qssPath = QCoreApplication::applicationDirPath()
+                     + "/../resources/themes/obsidian.qss";
     }
     QFile qssFile(qssPath);
     if (qssFile.open(QIODevice::ReadOnly)) {

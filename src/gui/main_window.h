@@ -34,6 +34,11 @@ public:
                         QSqlDatabase db,
                         QWidget* parent = nullptr);
 
+    // 主题切换
+    static QStringList availableThemes();
+    static QString themeDisplayName(const QString& id);
+    void applyTheme(const QString& themeName);
+
     // 启动时自动扫描一次（main.cpp 里 QTimer::singleShot(0,...) 调用）
     Q_INVOKABLE void onAutoBootScan();
 
