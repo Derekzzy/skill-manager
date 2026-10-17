@@ -125,15 +125,49 @@ MainWindow::MainWindow(SkillScanner* scanner,
 // ========================================================================
 
 void MainWindow::buildUi() {
-    setWindowTitle(tr("SKILL · Manager"));
+    setWindowTitle(tr("Skill Manager — 私人藏书目录"));
     resize(1280, 820);
 
-    // ---- 主容器：上部 Splitter + 底部 CommandBar ----
+    // ---- 主容器：TitleBar + 三栏 Splitter + 底部按钮栏 ----
     auto* central = new QWidget(this);
     setCentralWidget(central);
     auto* mainV = new QVBoxLayout(central);
     mainV->setContentsMargins(0, 0, 0, 0);
     mainV->setSpacing(0);
+
+    // ============================================================
+    // Title Bar — 藏书票标题 + 烫金细线 + 搜索框
+    // ============================================================
+    auto* titleBar = new QWidget(central);
+    titleBar->setObjectName("TitleBar");
+    titleBar->setFixedHeight(84);
+    auto* tLayout = new QHBoxLayout(titleBar);
+    tLayout->setContentsMargins(24, 14, 24, 10);
+    tLayout->setSpacing(18);
+
+    auto* titleL = new QLabel(tr("Skill Manager"), titleBar);
+    titleL->setObjectName("TitleMain");
+    tLayout->addWidget(titleL);
+
+    auto* titleSub = new QLabel(tr("私人藏书目录 · 5610 种"), titleBar);
+    titleSub->setObjectName("TitleSub");
+    tLayout->addWidget(titleSub);
+    tLayout->addStretch();
+
+    m_searchEdit = new QLineEdit(titleBar);
+    m_searchEdit->setObjectName("TitleSearch");
+    m_searchEdit->setPlaceholderText(tr("搜索书名 / 分类 / 关键字..."));
+    m_searchEdit->setFixedWidth(320);
+    tLayout->addWidget(m_searchEdit);
+
+    mainV->addWidget(titleBar);
+
+    // 烫金细线分隔
+    auto* goldRule = new QFrame(central);
+    goldRule->setObjectName("GoldRule");
+    goldRule->setFrameShape(QFrame::HLine);
+    goldRule->setFixedHeight(1);
+    mainV->addWidget(goldRule);
 
     // ---- 三栏 Splitter ----
     m_hSplitter = new QSplitter(Qt::Horizontal, central);
@@ -148,7 +182,7 @@ void MainWindow::buildUi() {
     leftLayout->setContentsMargins(0, 0, 0, 0);
     leftLayout->setSpacing(0);
 
-    auto* catLabel = new QLabel(tr("CATEGORIES"), leftPanel);
+    auto* catLabel = new QLabel(tr("分类"), leftPanel);
     catLabel->setObjectName("SidebarTitle");
     leftLayout->addWidget(catLabel);
 
@@ -178,7 +212,7 @@ void MainWindow::buildUi() {
     midLayout->setContentsMargins(0, 0, 0, 0);
     midLayout->setSpacing(0);
 
-    auto* listHeader = new QLabel(tr("SKILLS"), midPanel);
+    auto* listHeader = new QLabel(tr("书目"), midPanel);
     listHeader->setObjectName("ListHeader");
     midLayout->addWidget(listHeader);
 
@@ -379,30 +413,23 @@ void MainWindow::buildUi() {
     m_hSplitter->setSizes(QList<int>() << 200 << 440 << 640);
 
     // ============================================================
-    // 底部 Command Bar
+    // 底部按钮栏
     // ============================================================
     auto* cmdBar = new QWidget(central);
     cmdBar->setObjectName("CommandBar");
     auto* cmdLayout = new QHBoxLayout(cmdBar);
-    cmdLayout->setContentsMargins(14, 10, 14, 10);
-    cmdLayout->setSpacing(10);
+    cmdLayout->setContentsMargins(24, 10, 24, 10);
+    cmdLayout->setSpacing(6);
     mainV->addWidget(cmdBar);
 
-    auto* prompt = new QLabel(tr("$"), cmdBar);
-    prompt->setObjectName("PromptLabel");
-    cmdLayout->addWidget(prompt);
+    cmdLayout->addStretch();
 
-    m_searchEdit = new QLineEdit(cmdBar);
-    m_searchEdit->setObjectName("CmdSearch");
-    m_searchEdit->setPlaceholderText(tr("search skill / 书名 / 章节 ..."));
-    cmdLayout->addWidget(m_searchEdit, 1);
-
-    m_scanBtn    = new QPushButton(tr("SCAN"), cmdBar);
-    m_refreshBtn = new QPushButton(tr("REFRESH"), cmdBar);
-    m_translateBatchBtn = new QPushButton(tr("TRANSLATE"), cmdBar);
-    m_checkBtn   = new QPushButton(tr("UPDATE"), cmdBar);
-    m_addRepoBtn = new QPushButton(tr("ADD REPO"), cmdBar);
-    m_apiBtn     = new QPushButton(tr("API"), cmdBar);
+    m_scanBtn    = new QPushButton(tr("扫描"), cmdBar);
+    m_refreshBtn = new QPushButton(tr("刷新"), cmdBar);
+    m_translateBatchBtn = new QPushButton(tr("批量翻译"), cmdBar);
+    m_checkBtn   = new QPushButton(tr("检查更新"), cmdBar);
+    m_addRepoBtn = new QPushButton(tr("添加仓库"), cmdBar);
+    m_apiBtn     = new QPushButton(tr("API 设置"), cmdBar);
 
     m_scanBtn->setObjectName("SecondaryBtn");
     m_refreshBtn->setObjectName("SecondaryBtn");
@@ -485,7 +512,7 @@ void MainWindow::refreshCategoryTree() {
 void MainWindow::refreshTable() {
     m_tableModel->setFilter(m_catModel->categoryName(m_catTree->currentIndex()), m_searchEdit->text());
     int n = m_tableModel->rowCount();
-    m_countLabel->setText(tr("SKILLS %1").arg(n));
+    m_countLabel->setText(tr("共 %1 条").arg(n));
 }
 
 // ========================================================================
