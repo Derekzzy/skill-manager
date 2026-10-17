@@ -136,36 +136,43 @@ void MainWindow::buildUi() {
     mainV->setSpacing(0);
 
     // ============================================================
-    // Title Bar — bash prompt 风格
+    // Title Bar — 高存在感应用标题 + 搜索大框 + 右侧状态
     // ============================================================
     auto* titleBar = new QWidget(central);
     titleBar->setObjectName("TitleBar");
-    titleBar->setFixedHeight(48);
+    titleBar->setFixedHeight(64);
     auto* tLayout = new QHBoxLayout(titleBar);
-    tLayout->setContentsMargins(18, 8, 18, 6);
-    tLayout->setSpacing(0);
+    tLayout->setContentsMargins(22, 12, 22, 10);
+    tLayout->setSpacing(14);
 
-    auto* hostLbl = new QLabel(tr("user@skill-manager"), titleBar);
-    hostLbl->setObjectName("TitleHost");
-    tLayout->addWidget(hostLbl);
+    // App icon dot + 应用名
+    auto* dot = new QLabel(tr("●"), titleBar);
+    dot->setObjectName("AppDot");
+    tLayout->addWidget(dot);
 
-    auto* pathLbl = new QLabel(tr(":~$"), titleBar);
-    pathLbl->setObjectName("TitlePath");
-    tLayout->addWidget(pathLbl);
+    auto* nameLbl = new QLabel(tr("Skill Manager"), titleBar);
+    nameLbl->setObjectName("AppName");
+    tLayout->addWidget(nameLbl);
 
-    tLayout->addSpacing(12);
+    auto* subLbl = new QLabel(tr("5610 项 · 私人知识库"), titleBar);
+    subLbl->setObjectName("AppSub");
+    tLayout->addWidget(subLbl);
 
+    tLayout->addSpacing(20);
+
+    // 搜索大框
     m_searchEdit = new QLineEdit(titleBar);
     m_searchEdit->setObjectName("TitleSearch");
-    m_searchEdit->setPlaceholderText(tr("输入 skill 名 / 关键字 然后回车"));
-    m_searchEdit->setFixedWidth(420);
+    m_searchEdit->setPlaceholderText(tr("  搜索 skill 名、书名、章节、关键字..."));
+    m_searchEdit->setFixedWidth(380);
     tLayout->addWidget(m_searchEdit);
 
     tLayout->addStretch();
 
-    auto* tagLbl = new QLabel(tr("ready · 5610 skills · deepseek"), titleBar);
-    tagLbl->setObjectName("TitleTags");
-    tLayout->addWidget(tagLbl);
+    // 右侧状态
+    auto* stLbl = new QLabel(tr("在线"), titleBar);
+    stLbl->setObjectName("StatusDot");
+    tLayout->addWidget(stLbl);
 
     mainV->addWidget(titleBar);
 
